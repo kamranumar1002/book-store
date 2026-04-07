@@ -209,7 +209,7 @@ const UpdateBook = () => {
           )}
         </div>
 
-        <button type="submit" className="w-full py-2 bg-blue-500 text-white font-bold rounded-md">
+        <button type="submit" className="admin-btn-primary w-full py-2 rounded-md font-bold">
           Update Book
         </button>
       </form>

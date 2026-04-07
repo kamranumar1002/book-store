@@ -195,7 +195,7 @@ const AddBook = () => {
         </div>
 
         {/* Submit Button */}
-        <button type="submit" className="w-full py-2 bg-green-500 text-white font-bold rounded-md">
+        <button type="submit" className="admin-btn-primary w-full py-2 rounded-md font-bold">
          {
             isLoading ? <span className="">Adding.. </span> : <span>Add Book</span>
           }

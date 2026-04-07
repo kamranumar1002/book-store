@@ -1,107 +1,155 @@
-import React from 'react'
+import React, { useMemo, useState } from 'react'
 import { useDeleteBookMutation, useFetchAllBooksQuery } from '../../../redux/features/books/booksApi';
 import { Link } from 'react-router-dom';
 import Loading from '../../../components/Loading';
 
 const ManageBooks = () => {
-    const {data: books = [], refetch, isLoading, isError} = useFetchAllBooksQuery()
+        const {data: books = [], isLoading, isError} = useFetchAllBooksQuery()
+        const [searchTerm, setSearchTerm] = useState('');
+        const [deleteBook] = useDeleteBookMutation()
 
-    const [deleteBook] = useDeleteBookMutation()
+        const filteredBooks = useMemo(() => {
+            const normalizedSearch = searchTerm.trim().toLowerCase();
+            if (!normalizedSearch) return books;
 
-    // Handle deleting a book
-    const handleDeleteBook = async (id) => {
-        try {
-            await deleteBook(id).unwrap();
-            alert('Book deleted successfully!');
-            refetch();
+            return books.filter((book) =>
+                `${book?.title || book?.name || ''} ${book?.category || ''} ${book?.slug || ''}`
+                    .toLowerCase()
+                    .includes(normalizedSearch)
+            );
+        }, [books, searchTerm]);
 
-        } catch (error) {
-            console.error('Failed to delete book:', error.message);
-            alert('Failed to delete book. Please try again.');
-        }
-    };
+        const lowStockCount = useMemo(
+            () => books.filter((book) => Number(book?.stock ?? 0) <= 5).length,
+            [books]
+        );
+        const trendingCount = useMemo(
+            () => books.filter((book) => !!book?.trending).length,
+            [books]
+        );
 
+        const handleDeleteBook = async (id) => {
+                const shouldDelete = window.confirm('Are you sure you want to delete this book?');
+                if (!shouldDelete) return;
+
+                try {
+                        await deleteBook(id).unwrap();
+                        alert('Book deleted successfully!');
+                } catch (error) {
+                        console.error('Failed to delete book:', error?.message || error);
+                        alert('Failed to delete book. Please try again.');
+                }
+        };
 
         if (isLoading) return <Loading />;
-        if (isError) return <div className="text-red-600">Failed to load books for management.</div>;
+        if (isError) return <div className="text-red-600">Failed to load inventory data.</div>;
 
-  return (
-    <section className="py-1 bg-blueGray-50">
-    <div className="w-full xl:w-8/12 mb-12 xl:mb-0 px-4 mx-auto mt-24">
-        <div className="relative flex flex-col min-w-0 break-words bg-white w-full mb-6 shadow-lg rounded ">
-            <div className="rounded-t mb-0 px-4 py-3 border-0">
-                <div className="flex flex-wrap items-center">
-                    <div className="relative w-full px-4 max-w-full flex-grow flex-1">
-                        <h3 className="font-semibold text-base text-[#2C3333]">All Books</h3>
-                    </div>
-                    <div className="relative w-full px-4 max-w-full flex-grow flex-1 text-right">
-                        <button className="bg-primary text-white text-xs font-bold uppercase px-3 py-1 rounded outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150" type="button">See all</button>
-                    </div>
+    return (
+        <div className="space-y-6">
+            <section className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h2 className="text-2xl font-semibold text-slate-900">Inventory Management</h2>
+                    <p className="text-sm text-slate-500">Control products, stock signals, and storefront content.</p>
                 </div>
-            </div>
+                <Link
+                    to="/dashboard/add-new-book"
+                    className="admin-btn-primary inline-flex items-center justify-center px-4 py-2 rounded-md"
+                >
+                    Add New Product
+                </Link>
+            </section>
 
-            <div className="block w-full overflow-x-auto">
-                <table className="items-center bg-transparent w-full border-collapse ">
-                    <thead>
-                        <tr>
-                            <th className="px-6 bg-gray-50 text-[#2C3333] align-middle border border-solid border-gray-200 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                                #
-                            </th>
-                            <th className="px-6 bg-gray-50 text-[#2C3333] align-middle border border-solid border-gray-200 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                                Book Title
-                            </th>
-                            <th className="px-6 bg-gray-50 text-[#2C3333] align-middle border border-solid border-gray-200 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                                Category
-                            </th>
-                            <th className="px-6 bg-gray-50 text-[#2C3333] align-middle border border-solid border-gray-200 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                                Price
-                            </th>
-                            <th className="px-6 bg-gray-50 text-[#2C3333] align-middle border border-solid border-gray-200 py-3 text-xs uppercase border-l-0 border-r-0 whitespace-nowrap font-semibold text-left">
-                                Actions
-                            </th>
-                        </tr>
-                    </thead>
+            <section className="grid sm:grid-cols-3 gap-4">
+                <article className="card-surface p-4 bg-white">
+                    <p className="text-sm text-slate-500">Total Products</p>
+                    <p className="text-2xl font-semibold text-slate-900 mt-1">{books.length.toLocaleString()}</p>
+                </article>
+                <article className="card-surface p-4 bg-white">
+                    <p className="text-sm text-slate-500">Trending Products</p>
+                    <p className="text-2xl font-semibold text-slate-900 mt-1">{trendingCount.toLocaleString()}</p>
+                </article>
+                <article className="card-surface p-4 bg-white">
+                    <p className="text-sm text-slate-500">Low Stock Alerts</p>
+                    <p className="text-2xl font-semibold text-slate-900 mt-1">{lowStockCount.toLocaleString()}</p>
+                </article>
+            </section>
 
-                    <tbody>
-                        {
-                            books && books.map((book, index) => (
-                                <tr key={book?._id || index} className="hover:bg-gray-50 transition-colors">
-                                <th className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 text-left text-[#2C3333] ">
-                                   {index + 1}
-                                </th>
-                                <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 ">
-                                    {book?.title || book?.name || 'Untitled Book'}
-                                </td>
-                                <td className="border-t-0 px-6 align-center border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                                  {book.category}
-                                </td>
-                                <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
+            <section className="card-surface p-4 bg-white">
+                <label className="text-sm text-slate-600">Search inventory</label>
+                <input
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    type="text"
+                    placeholder="Search by title, category, or slug"
+                    className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2"
+                />
+            </section>
 
-                                    Rs. {book?.newPrice ?? book?.price ?? 0}
-                                </td>
-                                <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4 space-x-4">
-
-                                    <Link to={`/dashboard/edit-book/${book._id}`} className="font-medium text-primary hover:text-secondary mr-2 hover:underline underline-offset-2">
-                                        Edit
-                                    </Link>
-                                    <button 
-                                    onClick={() => handleDeleteBook(book._id)}
-                                    className="font-medium bg-primary py-1 px-4 rounded-full text-white mr-2">Delete</button>
-                                </td>
-                            </tr> 
-                            ))
-                        }
-         
-
-                    </tbody>
-
-                </table>
-            </div>
+            <section className="card-surface overflow-hidden bg-white">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="text-left text-slate-500 border-b border-slate-200">
+                                <th className="px-4 py-3 font-medium">Product</th>
+                                <th className="px-4 py-3 font-medium">Category</th>
+                                <th className="px-4 py-3 font-medium">Stock</th>
+                                <th className="px-4 py-3 font-medium">Price</th>
+                                <th className="px-4 py-3 font-medium">Trending</th>
+                                <th className="px-4 py-3 font-medium text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredBooks.length === 0 ? (
+                                <tr>
+                                    <td className="px-4 py-6 text-slate-500" colSpan={6}>
+                                        No products found for this filter.
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredBooks.map((book) => {
+                                    const stock = Number(book?.stock ?? 0);
+                                    return (
+                                        <tr key={book._id} className="border-b border-slate-100 last:border-b-0">
+                                            <td className="px-4 py-3">
+                                                <p className="font-medium text-slate-800">{book?.title || book?.name || 'Untitled Book'}</p>
+                                                <p className="text-xs text-slate-500">{book?.slug || 'no-slug'}</p>
+                                            </td>
+                                            <td className="px-4 py-3 capitalize text-slate-700">{book?.category || 'uncategorized'}</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`text-xs px-2 py-1 rounded-full ${stock <= 5 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                    {stock} in stock
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-700">Rs. {Number(book?.newPrice ?? book?.price ?? 0).toLocaleString()}</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`text-xs px-2 py-1 rounded-full ${book?.trending ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                    {book?.trending ? 'Yes' : 'No'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-right space-x-2">
+                                                <Link
+                                                    to={`/dashboard/edit-book/${book._id}`}
+                                                    className="admin-btn-secondary inline-flex items-center px-3 py-1 rounded-md"
+                                                >
+                                                    Edit
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleDeleteBook(book._id)}
+                                                    className="admin-btn-danger inline-flex items-center px-3 py-1 rounded-md"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </div>
-    </div>
-
-</section>
-  )
+    )
 }
 
 export default ManageBooks

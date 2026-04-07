@@ -1,215 +1,227 @@
-import axios from 'axios';
-import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import {
+  FiAlertTriangle,
+  FiBookOpen,
+  FiClock,
+  FiDollarSign,
+  FiShoppingBag,
+  FiUsers,
+} from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 import Loading from '../../components/Loading';
-import getBaseUrl from '../../utils/baseURL';
-import { MdIncompleteCircle } from 'react-icons/md'
-import RevenueChart from './RevenueChart';
+import { useGetAdminStatsQuery } from '../../redux/features/admin/adminApi';
+
+const formatCurrency = (value) => `Rs. ${Number(value || 0).toLocaleString()}`;
+
+const formatMonthLabel = (value = '') => {
+  const [year, month] = value.split('-');
+  if (!year || !month) return value || 'Unknown';
+  const date = new Date(Number(year), Number(month) - 1, 1);
+  return date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+};
+
+const statusPillClass = (status = '') => {
+  const normalized = (status || '').toLowerCase();
+  if (normalized === 'delivered') return 'bg-emerald-100 text-emerald-700';
+  if (normalized === 'shipped') return 'bg-blue-100 text-blue-700';
+  if (normalized === 'processing') return 'bg-amber-100 text-amber-700';
+  return 'bg-slate-100 text-slate-700';
+};
 
 const Dashboard = () => {
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState({});
-  const [errorMessage, setErrorMessage] = useState('');
-    // console.log(data)
-    const navigate = useNavigate()
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response =  await axios.get(`${getBaseUrl()}/api/admin`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json',
-                    },
-                })
+  const { data, isLoading, isError, error } = useGetAdminStatsQuery();
 
-                setData(response.data);
-            } catch (error) {
-                console.error('Error:', error);
-        const status = error?.response?.status;
-        if (status === 401 || status === 403) {
-          localStorage.removeItem('token');
-          navigate('/admin', { replace: true });
-          return;
-        }
-        const apiMessage = error?.response?.data?.message;
-        setErrorMessage(apiMessage || 'Failed to load admin dashboard data.');
-      } finally {
-        setLoading(false);
-            }
-        }
+  if (isLoading) return <Loading />;
+  if (isError) {
+    return (
+      <div className="card-surface p-4 text-red-700">
+        {error?.data?.message || 'Failed to load admin dashboard data.'}
+      </div>
+    );
+  }
 
-        fetchData();
-  }, [navigate]);
+  const monthlySales = data?.monthlySales || [];
+  const recentOrders = data?.recentOrders || [];
+  const maxMonthlySales =
+    monthlySales.reduce((max, item) => Math.max(max, Number(item?.totalSales) || 0), 0) || 1;
 
-    // console.log(data)
-
-    if(loading) return <Loading/>
-    if(errorMessage) return <div className="text-red-600">{errorMessage}</div>
+  const statCards = [
+    {
+      key: 'sales',
+      title: 'Total Revenue',
+      value: formatCurrency(data?.totalSales),
+      subtitle: 'Across all completed and active orders',
+      icon: FiDollarSign,
+    },
+    {
+      key: 'orders',
+      title: 'Total Orders',
+      value: Number(data?.totalOrders || 0).toLocaleString(),
+      subtitle: `${Number(data?.pendingOrders || 0).toLocaleString()} pending`,
+      icon: FiShoppingBag,
+    },
+    {
+      key: 'inventory',
+      title: 'Total Products',
+      value: Number(data?.totalBooks || 0).toLocaleString(),
+      subtitle: `${Number(data?.trendingBooks || 0).toLocaleString()} trending`,
+      icon: FiBookOpen,
+    },
+    {
+      key: 'users',
+      title: 'Registered Users',
+      value: Number(data?.totalUsers || 0).toLocaleString(),
+      subtitle: 'Customer accounts in the system',
+      icon: FiUsers,
+    },
+    {
+      key: 'pending',
+      title: 'Pending Orders',
+      value: Number(data?.pendingOrders || 0).toLocaleString(),
+      subtitle: 'Needs processing by operations',
+      icon: FiClock,
+    },
+    {
+      key: 'stock',
+      title: 'Low Stock Alerts',
+      value: Number(data?.lowStockBooks || 0).toLocaleString(),
+      subtitle: 'Products with stock less than or equal to 5',
+      icon: FiAlertTriangle,
+    },
+  ];
 
   return (
-    <>
-     <section className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
-              <div className="flex items-center p-8 bg-white shadow rounded-lg border border-border">
-                <div className="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-gray-700 bg-gray-200 rounded-full mr-6">
-                <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-6 w-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
+    <div className="space-y-6">
+      <section className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {statCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <article key={card.key} className="card-surface p-5 bg-gradient-to-br from-white to-slate-50">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <span className="block text-2xl font-bold">{data?.totalBooks}</span>
-                  <span className="block text-gray-500">Products</span>
+                  <p className="text-sm text-slate-500">{card.title}</p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-900">{card.value}</p>
+                  <p className="mt-1 text-xs text-slate-500">{card.subtitle}</p>
                 </div>
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white">
+                  <Icon className="h-5 w-5" />
+                </span>
               </div>
-              <div className="flex items-center p-8 bg-white shadow rounded-lg border border-border">
-                <div className="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-gray-700 bg-gray-200 rounded-full mr-6">
-                  <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-6 w-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-2xl font-bold">Rs. {data?.totalSales}</span>
-                  <span className="block text-gray-500">Total Sales</span>
-                </div>
-              </div>
-              <div className="flex items-center p-8 bg-white shadow rounded-lg border border-border">
-                <div className="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-gray-700 bg-gray-200 rounded-full mr-6">
-                  <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-6 w-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="inline-block text-2xl font-bold">{data?.trendingBooks}</span>
-                  <span className="inline-block text-xl text-gray-500 font-semibold">(13%)</span>
-                  <span className="block text-gray-500">Trending Books in This Month</span>
-                </div>
-              </div>
-              <div className="flex items-center p-8 bg-white shadow rounded-lg border border-border">
-                <div className="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-gray-700 bg-gray-200 rounded-full mr-6">
-                <MdIncompleteCircle className='size-6'/>
-                </div>
-                <div>
-                  <span className="block text-2xl font-bold">{data?.totalOrders}</span>
-                  <span className="block text-gray-500">Total Orders</span>
-                </div>
-              </div>
-            </section>
-            <section className="grid md:grid-cols-2 xl:grid-cols-4 xl:grid-rows-3 xl:grid-flow-col gap-6">
-              <div className="flex flex-col md:col-span-2 md:row-span-2 bg-white shadow rounded-lg border border-border">
-                <div className="px-6 py-5 font-semibold border-b border-gray-100">The number of orders per month</div>
-                <div className="p-4 flex-grow">
-                  <div className="flex items-center justify-center h-full px-4 py-16 text-gray-400 text-3xl font-semibold bg-gray-100 border-2 border-gray-200 border-dashed rounded-md">
-                  <RevenueChart />
+            </article>
+          );
+        })}
+      </section>
+
+      <section className="grid xl:grid-cols-[1.4fr_1fr] gap-6">
+        <article className="card-surface p-5 bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Recent Orders</h2>
+              <p className="text-sm text-slate-500">Live activity from the latest checkouts.</p>
+            </div>
+            <Link
+              to="/dashboard/manage-orders"
+              className="admin-btn-secondary inline-flex items-center px-3 py-2 rounded-md text-sm"
+            >
+              Manage Orders
+            </Link>
+          </div>
+
+          {recentOrders.length === 0 ? (
+            <p className="text-sm text-slate-500">No recent orders found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-slate-500 border-b border-slate-200">
+                    <th className="py-2 pr-3 font-medium">Order</th>
+                    <th className="py-2 pr-3 font-medium">Customer</th>
+                    <th className="py-2 pr-3 font-medium">Amount</th>
+                    <th className="py-2 pr-3 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentOrders.map((order) => (
+                    <tr key={order._id} className="border-b border-slate-100 last:border-b-0">
+                      <td className="py-3 pr-3">
+                        <p className="font-medium text-slate-800">#{String(order._id).slice(-6)}</p>
+                        <p className="text-xs text-slate-500">
+                          {new Date(order.createdAt).toLocaleString()}
+                        </p>
+                      </td>
+                      <td className="py-3 pr-3">
+                        <p className="text-slate-700">{order.name}</p>
+                        <p className="text-xs text-slate-500">{order.email}</p>
+                      </td>
+                      <td className="py-3 pr-3 font-medium text-slate-800">
+                        {formatCurrency(order.totalPrice)}
+                      </td>
+                      <td className="py-3 pr-3">
+                        <span className={`text-xs px-2 py-1 rounded-full capitalize ${statusPillClass(order.status)}`}>
+                          {order.status || 'pending'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </article>
+
+        <article className="card-surface p-5 bg-white">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Monthly Performance</h2>
+              <p className="text-sm text-slate-500">Revenue and volume trend per month.</p>
+            </div>
+          </div>
+
+          {monthlySales.length === 0 ? (
+            <p className="text-sm text-slate-500">No monthly sales data available yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {monthlySales.map((month) => {
+                const monthSales = Number(month?.totalSales || 0);
+                const percentage = Math.max(4, (monthSales / maxMonthlySales) * 100);
+                return (
+                  <div key={month._id}>
+                    <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                      <span>{formatMonthLabel(month._id)}</span>
+                      <span>
+                        {formatCurrency(monthSales)} · {Number(month?.totalOrders || 0)} orders
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full bg-slate-900 rounded-full"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
-              </div>
-              <div className="flex items-center p-8 bg-white shadow rounded-lg border border-border">
-                <div className="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-gray-700 bg-gray-200 rounded-full mr-6">
-                  <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-6 w-6">
-                    <path fill="#fff" d="M12 14l9-5-9-5-9 5 9 5z" />
-                    <path fill="#fff" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-2xl font-bold">02</span>
-                  <span className="block text-gray-500">Orders left</span>
-                </div>
-              </div>
-              <div className="flex items-center p-8 bg-white shadow rounded-lg border border-border">
-                <div className="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-gray-700 bg-gray-200 rounded-full mr-6">
-                  <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-6 w-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="block text-2xl font-bold">139</span>
-                  <span className="block text-gray-500">Website visits (last day)</span>
-                </div>
-              </div>
-              <div className="row-span-3 bg-white shadow rounded-lg border border-border">
-                <div className="flex items-center justify-between px-6 py-5 font-semibold border-b border-gray-100">
-                  <span>Users by average order</span>
-                  <button type="button" className="inline-flex justify-center rounded-md px-1 -mr-1 bg-white text-sm leading-5 font-medium text-gray-500 hover:text-gray-600" id="options-menu" aria-haspopup="true" aria-expanded="true">
-                    Descending
-                    <svg className="-mr-1 ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-    
-                </div>
-                <div className="overflow-y-auto" style={{maxHeight: '24rem'}}>
-                  <ul className="p-6 space-y-6">
-                    <li className="flex items-center">
-                      <div className="h-10 w-10 mr-3 bg-gray-100 rounded-full overflow-hidden">
-                        <img src="https://randomuser.me/api/portraits/women/82.jpg" alt="Annette Watson profile picture"/>
-                      </div>
-                      <span className="text-gray-600">Annette Watson</span>
-                      <span className="ml-auto font-semibold">9.3</span>
-                    </li>
-                    <li className="flex items-center">
-                      <div className="h-10 w-10 mr-3 bg-gray-100 rounded-full overflow-hidden">
-                        <img src="https://randomuser.me/api/portraits/men/81.jpg" alt="Calvin Steward profile picture"/>
-                      </div>
-                      <span className="text-gray-600">Calvin Steward</span>
-                      <span className="ml-auto font-semibold">8.9</span>
-                    </li>
-                    <li className="flex items-center">
-                      <div className="h-10 w-10 mr-3 bg-gray-100 rounded-full overflow-hidden">
-                        <img src="https://randomuser.me/api/portraits/men/80.jpg" alt="Ralph Richards profile picture"/>
-                      </div>
-                      <span className="text-gray-600">Ralph Richards</span>
-                      <span className="ml-auto font-semibold">8.7</span>
-                    </li>
-                    <li className="flex items-center">
-                      <div className="h-10 w-10 mr-3 bg-gray-100 rounded-full overflow-hidden">
-                        <img src="https://randomuser.me/api/portraits/men/79.jpg" alt="Bernard Murphy profile picture"/>
-                      </div>
-                      <span className="text-gray-600">Bernard Murphy</span>
-                      <span className="ml-auto font-semibold">8.2</span>
-                    </li>
-                    <li className="flex items-center">
-                      <div className="h-10 w-10 mr-3 bg-gray-100 rounded-full overflow-hidden">
-                        <img src="https://randomuser.me/api/portraits/women/78.jpg" alt="Arlene Robertson profile picture"/>
-                      </div>
-                      <span className="text-gray-600">Arlene Robertson</span>
-                      <span className="ml-auto font-semibold">8.2</span>
-                    </li>
-                    <li className="flex items-center">
-                      <div className="h-10 w-10 mr-3 bg-gray-100 rounded-full overflow-hidden">
-                        <img src="https://randomuser.me/api/portraits/women/77.jpg" alt="Jane Lane profile picture"/>
-                      </div>
-                      <span className="text-gray-600">Jane Lane</span>
-                      <span className="ml-auto font-semibold">8.1</span>
-                    </li>
-                    <li className="flex items-center">
-                      <div className="h-10 w-10 mr-3 bg-gray-100 rounded-full overflow-hidden">
-                        <img src="https://randomuser.me/api/portraits/men/76.jpg" alt="Pat Mckinney profile picture"/>
-                      </div>
-                      <span className="text-gray-600">Pat Mckinney</span>
-                      <span className="ml-auto font-semibold">7.9</span>
-                    </li>
-                    <li className="flex items-center">
-                      <div className="h-10 w-10 mr-3 bg-gray-100 rounded-full overflow-hidden">
-                        <img src="https://randomuser.me/api/portraits/men/75.jpg" alt="Norman Walters profile picture"/>
-                      </div>
-                      <span className="text-gray-600">Norman Walters</span>
-                      <span className="ml-auto font-semibold">7.7</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <div className="flex flex-col row-span-3 bg-white shadow rounded-lg border border-border">
-                <div className="px-6 py-5 font-semibold border-b border-gray-100">Students by type of studying</div>
-                <div className="p-4 flex-grow">
-                  <div className="flex items-center justify-center h-full px-4 py-24 text-gray-400 text-3xl font-semibold bg-gray-100 border-2 border-gray-200 border-dashed rounded-md">Chart</div>
-                </div>
-              </div>
-            </section>
-            <section className="text-right font-semibold text-gray-500">
-              <a href="#" className="text-gray-600 hover:underline">Recreated on Codepen</a> with <a href="https://tailwindcss.com/" className="text-gray-500 hover:underline">Tailwind CSS</a> by Azri Kahar, <a href="https://dribbble.com/shots/10711741-Free-UI-Kit-for-Figma-Online-Courses-Dashboard" className="text-gray-600 hover:underline">original design</a> made by Chili Labs
-            </section>
-    </>
-  )
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-6 grid sm:grid-cols-2 gap-2">
+            <Link
+              to="/dashboard/manage-books"
+              className="admin-btn-secondary text-center text-sm px-3 py-2 rounded-md"
+            >
+              Open Inventory
+            </Link>
+            <Link
+              to="/dashboard/manage-users"
+              className="admin-btn-secondary text-center text-sm px-3 py-2 rounded-md"
+            >
+              Open Users
+            </Link>
+          </div>
+        </article>
+      </section>
+    </div>
+  );
 }
 
 export default Dashboard
