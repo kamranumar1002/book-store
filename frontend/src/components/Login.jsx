@@ -1,12 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FaGoogle } from "react-icons/fa";
 import { useForm } from "react-hook-form"
-import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+import getBaseUrl from '../utils/baseURL';
 
 const Login = () => {
     const [message, setMessage] = useState("")
-    const { loginUser, signInWithGoogle} = useAuth();
     const navigate = useNavigate()
     const {
         register,
@@ -17,22 +16,28 @@ const Login = () => {
 
       const onSubmit = async (data) => {
         try {
-            await loginUser(data.email, data.password);
-            alert("Login successful!");
-            navigate("/")
-        } catch (error) {
-            setMessage("Please provide a valid email and password") 
-            console.error(error)
-        }
-      }
+            const username = (data.email || '').trim().toLowerCase();
+            const password = (data.password || '').trim();
+            const response = await axios.post(`${getBaseUrl()}/api/auth/login`, {
+                username,
+                password
+            }, {
+                headers: { 'Content-Type': 'application/json' }
+            });
 
-      const handleGoogleSignIn = async () => {
-        try {
-            await signInWithGoogle();
+            const auth = response.data;
+            if (auth?.token) {
+                localStorage.setItem('token', auth.token);
+            }
             alert("Login successful!");
-            navigate("/")
+            if (auth?.user?.role === 'admin') {
+                navigate("/dashboard");
+            } else {
+                navigate("/");
+            }
         } catch (error) {
-            alert("Google sign in failed!") 
+            const apiMessage = error?.response?.data?.message;
+            setMessage(apiMessage || "Please provide a valid username and password") 
             console.error(error)
         }
       }
@@ -66,16 +71,6 @@ const Login = () => {
                 </div>
             </form>
             <p className='align-baseline font-medium mt-4 text-sm'>Haven't an account? Please <Link to="/register" className='text-blue-500 hover:text-blue-700'>Register</Link></p>
-
-            {/* google sign in */}
-            <div className='mt-4'>
-                <button 
-                onClick={handleGoogleSignIn}
-                className='w-full flex flex-wrap gap-1 items-center justify-center bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none'>
-                <FaGoogle  className='mr-2'/>
-                Sign in with Google
-                </button>
-            </div>
 
             <p className='mt-5 text-center text-gray-500 text-xs'>©2025 Book Store. All rights reserved.</p>
         </div>

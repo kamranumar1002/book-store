@@ -10,6 +10,8 @@ import axios from 'axios';
 import getBaseUrl from '../../../utils/baseURL';
 
 const UpdateBook = () => {
+  const MIN_PRICE = 400;
+  const MAX_PRICE = 900;
   const { id } = useParams();
   const { data: bookData, isLoading, isError, refetch } = useFetchBookByIdQuery(id);
   // console.log(bookData)
@@ -19,6 +21,9 @@ const UpdateBook = () => {
     if (bookData) {
       setValue('title', bookData.title);
       setValue('description', bookData.description);
+      setValue('seoTitle', bookData.seoTitle || '');
+      setValue('metaDescription', bookData.metaDescription || '');
+      setValue('keywords', bookData.keywords || '');
       setValue('category', bookData?.category);
       setValue('trending', bookData.trending);
       setValue('oldPrice', bookData.oldPrice);
@@ -28,13 +33,23 @@ const UpdateBook = () => {
   }, [bookData, setValue])
 
   const onSubmit = async (data) => {
+    const oldPrice = Number(data.oldPrice);
+    const newPrice = Number(data.newPrice);
+    if (oldPrice < MIN_PRICE || oldPrice > MAX_PRICE || newPrice < MIN_PRICE || newPrice > MAX_PRICE) {
+      alert(`Please enter Old Price and New Price between Rs. ${MIN_PRICE} and Rs. ${MAX_PRICE}.`);
+      return;
+    }
+
     const updateBookData = {
       title: data.title,
       description: data.description,
+      seoTitle: data.seoTitle || '',
+      metaDescription: data.metaDescription || '',
+      keywords: data.keywords || '',
       category: data.category,
       trending: data.trending,
-      oldPrice: Number(data.oldPrice),
-      newPrice: Number(data.newPrice),
+      oldPrice,
+      newPrice,
       coverImage: data.coverImage || bookData.coverImage,
     };
     try {
@@ -78,6 +93,27 @@ const UpdateBook = () => {
           name="description"
           placeholder="Enter book description"
           type="textarea"
+          register={register}
+        />
+
+        <InputField
+          label="SEO Title"
+          name="seoTitle"
+          placeholder="Enter SEO title"
+          register={register}
+        />
+
+        <InputField
+          label="Meta Description"
+          name="metaDescription"
+          placeholder="Enter meta description"
+          register={register}
+        />
+
+        <InputField
+          label="Keywords"
+          name="keywords"
+          placeholder="keyword1, keyword2, keyword3"
           register={register}
         />
 

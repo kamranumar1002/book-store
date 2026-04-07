@@ -23,7 +23,7 @@ const UserDashboard = () => {
                                 <li key={order._id} className="bg-gray-50 p-4 rounded-lg shadow-sm space-y-1">
                                     <p className="font-medium">Order ID: {order._id}</p>
                                     <p>Date: {new Date(order?.createdAt).toLocaleDateString()}</p>
-                                    <p >Total: ${order.totalPrice}</p>
+                                    <p >Total: Rs. {order.totalPrice}</p>
                                     {order.productIds.map((productId) => (
                                         <p key={productId} className='ml-1'>{productId}</p>
                                     ))}

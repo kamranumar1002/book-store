@@ -26,6 +26,10 @@ const booksApi = createApi({
             query: (id) => `/${id}`,
             providesTags: (result, error, id) => [{ type: "Books", id }],
         }),
+        fetchBookBySlug: builder.query({
+            query: (slug) => `/slug/${slug}`,
+            providesTags: (result, error, slug) => [{ type: "Books", id: slug }],
+        }),
         addBook: builder.mutation({
             query: (newBook) => ({
                 url: `/create-book`,
@@ -55,5 +59,5 @@ const booksApi = createApi({
     })
 })
 
-export const {useFetchAllBooksQuery, useFetchBookByIdQuery, useAddBookMutation, useUpdateBookMutation, useDeleteBookMutation} = booksApi;
+export const {useFetchAllBooksQuery, useFetchBookByIdQuery, useFetchBookBySlugQuery, useAddBookMutation, useUpdateBookMutation, useDeleteBookMutation} = booksApi;
 export default booksApi;

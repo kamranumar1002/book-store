@@ -17,41 +17,45 @@ export const AuthProvide = ({children}) => {
 
     // register a user
     const registerUser = async (email,password) => {
-
+        if (!auth) throw new Error("Firebase is not configured");
         return await createUserWithEmailAndPassword(auth, email, password);
     }
 
     // login the user
     const loginUser = async (email, password) => {
-    
-        return await signInWithEmailAndPassword(auth, email, password)
+        if (!auth) throw new Error("Firebase is not configured");
+        return await signInWithEmailAndPassword(auth, email, password);
     }
 
     // sing up with google
     const signInWithGoogle = async () => {
-     
-        return await signInWithPopup(auth, googleProvider)
+        if (!auth) throw new Error("Firebase is not configured");
+        return await signInWithPopup(auth, googleProvider);
     }
 
     // logout the user
     const logout = () => {
-        return signOut(auth)
+        if (!auth) return Promise.resolve();
+        return signOut(auth);
     }
 
     // manage user
     useEffect(() => {
-        const unsubscribe =  onAuthStateChanged(auth, (user) => {
+        if (!auth) {
+            setLoading(false);
+            return;
+        }
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
             setCurrentUser(user);
             setLoading(false);
 
-            if(user) {
-               
-                const {email, displayName, photoURL} = user;
+            if (user) {
+                const { email, displayName, photoURL } = user;
                 const userData = {
                     email, username: displayName, photo: photoURL
-                } 
+                };
             }
-        })
+        });
 
         return () => unsubscribe();
     }, [])

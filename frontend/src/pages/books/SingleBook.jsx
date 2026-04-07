@@ -1,15 +1,17 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { FiShoppingCart } from "react-icons/fi"
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 
 import { getImgUrl } from '../../utils/getImgUrl';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../../redux/features/cart/cartSlice';
-import { useFetchBookByIdQuery } from '../../redux/features/books/booksApi';
+import { useFetchBookBySlugQuery } from '../../redux/features/books/booksApi';
+import SEO from '../../components/SEO';
 
 const SingleBook = () => {
-    const {id} = useParams();
-    const {data: book, isLoading, isError} = useFetchBookByIdQuery(id);
+    const {slug} = useParams();
+    const navigate = useNavigate();
+    const {data: book, isLoading, isError} = useFetchBookBySlugQuery(slug);
 
     const dispatch =  useDispatch();
 
@@ -17,10 +19,21 @@ const SingleBook = () => {
         dispatch(addToCart(product))
     }
 
+    useEffect(() => {
+        if (book?.slug && slug !== book.slug) {
+            navigate(`/books/${book.slug}`, { replace: true });
+        }
+    }, [book?.slug, slug, navigate]);
+
     if(isLoading) return <div>Loading...</div>
     if(isError) return <div>Error happending to load book info</div>
   return (
     <div className="max-w-lg shadow-md p-5">
+            <SEO
+              title={book?.seoTitle || `${book?.title} | Book Store`}
+              metaDescription={book?.metaDescription || book?.description}
+              keywords={book?.keywords || `${book?.category || ''}, books, bookstore`}
+            />
             <h1 className="text-2xl font-bold mb-6">{book.title}</h1>
 
             <div className=''>

@@ -6,15 +6,29 @@ import { useAddBookMutation } from '../../../redux/features/books/booksApi';
 import Swal from 'sweetalert2';
 
 const AddBook = () => {
+    const MIN_PRICE = 400;
+    const MAX_PRICE = 900;
     const { register, handleSubmit, formState: { errors }, reset } = useForm();
     const [imageFile, setimageFile] = useState(null);
     const [addBook, {isLoading, isError}] = useAddBookMutation()
     const [imageFileName, setimageFileName] = useState('')
+    const [imageDataUrl, setImageDataUrl] = useState('');
     const onSubmit = async (data) => {
+        const oldPrice = Number(data.oldPrice);
+        const newPrice = Number(data.newPrice);
+        if (oldPrice < MIN_PRICE || oldPrice > MAX_PRICE || newPrice < MIN_PRICE || newPrice > MAX_PRICE) {
+          alert(`Please enter Old Price and New Price between Rs. ${MIN_PRICE} and Rs. ${MAX_PRICE}.`);
+          return;
+        }
  
         const newBookData = {
             ...data,
-            coverImage: imageFileName
+            // Ensure payload shape is stable for backend + homepage rendering.
+            trending: !!data.trending,
+            oldPrice,
+            newPrice,
+            // Persist actual gallery image content so homepage can render it later.
+            coverImage: imageDataUrl || imageFileName || 'book-1.png'
         }
         try {
             await addBook(newBookData).unwrap();
@@ -30,6 +44,7 @@ const AddBook = () => {
               reset();
               setimageFileName('')
               setimageFile(null);
+              setImageDataUrl('');
         } catch (error) {
             console.error(error);
             alert("Failed to add book. Please try again.")   
@@ -42,6 +57,17 @@ const AddBook = () => {
         if(file) {
             setimageFile(file);
             setimageFileName(file.name);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              if (typeof reader.result === 'string') {
+                setImageDataUrl(reader.result);
+              }
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setimageFile(null);
+            setimageFileName('');
+            setImageDataUrl('');
         }
     }
   return (
@@ -66,6 +92,27 @@ const AddBook = () => {
           type="textarea"
           register={register}
 
+        />
+
+        <InputField
+          label="SEO Title"
+          name="seoTitle"
+          placeholder="Enter SEO title"
+          register={register}
+        />
+
+        <InputField
+          label="Meta Description"
+          name="metaDescription"
+          placeholder="Enter meta description"
+          register={register}
+        />
+
+        <InputField
+          label="Keywords"
+          name="keywords"
+          placeholder="keyword1, keyword2, keyword3"
+          register={register}
         />
 
         {/* Reusable Select Field for Category */}

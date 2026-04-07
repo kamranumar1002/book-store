@@ -29,6 +29,25 @@ const bookSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
+    seoTitle: {
+        type: String,
+        default: "",
+    },
+    metaDescription: {
+        type: String,
+        default: "",
+    },
+    keywords: {
+        type: String,
+        default: "",
+    },
+    slug: {
+        type: String,
+        required: true,
+        unique: true,
+        index: true,
+        sparse: true,
+    },
     createdAt: {
         type: Date,
         default: Date.now,

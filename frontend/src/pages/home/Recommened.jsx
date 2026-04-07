@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 // Import Swiper React components
 import { Swiper, SwiperSlide } from 'swiper/react';
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 // import required modules
 import { Pagination, Navigation } from 'swiper/modules';
@@ -13,19 +14,41 @@ import BookCard from '../books/BookCard';
 import { useFetchAllBooksQuery } from '../../redux/features/books/booksApi';
 
 
-const Recommened = () => {
-   
+const Recommened = ({ books: booksProp }) => {
+  const [swiperRef, setSwiperRef] = useState(null);
+  const { data: booksFromApi = [] } = useFetchAllBooksQuery(undefined, { skip: !!booksProp });
+  const books = booksProp ?? booksFromApi;
 
-    const {data: books = []} = useFetchAllBooksQuery();
   return (
     <div className='py-16'>
-         <h2 className='text-3xl font-semibold mb-6'>Recommended for you </h2>
+         <div className='mb-6 flex items-center justify-between'>
+            <h2 className='text-3xl font-semibold'>Recommended for you </h2>
+            <div className='flex items-center gap-2'>
+                <button
+                    type="button"
+                    onClick={() => swiperRef?.slidePrev()}
+                    className="rounded-full border border-gray-300 p-2 hover:bg-gray-100"
+                    aria-label="Scroll recommended books left"
+                >
+                    <FiChevronLeft size={20} />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => swiperRef?.slideNext()}
+                    className="rounded-full border border-gray-300 p-2 hover:bg-gray-100"
+                    aria-label="Scroll recommended books right"
+                >
+                    <FiChevronRight size={20} />
+                </button>
+            </div>
+         </div>
 
 
          <Swiper
+                onSwiper={setSwiperRef}
                 slidesPerView={1}
                 spaceBetween={30}
-                navigation={true}
+                navigation={false}
                 breakpoints={{
                     640: {
                         slidesPerView: 1,
@@ -49,7 +72,7 @@ const Recommened = () => {
             >
 
                 {
-                   books.length > 0 && books.slice(8, 18).map((book, index) => (
+                   books.length > 0 && books.map((book, index) => (
                         <SwiperSlide key={index}>
                             <BookCard  book={book} />
                         </SwiperSlide>

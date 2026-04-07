@@ -7,11 +7,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        'primary': '#FFCE1A',
-        'secondary' : "#0D0842",
-        'blackBG': '#F3F3F3',
-        'Favorite': '#FF5841'
-      }, 
+        // Grayish, subtle palette
+        bg: '#f3f4f6',
+        surface: '#ffffff',
+        surface2: '#eef0f3',
+        border: '#d5d9df',
+        text: '#1f2937',
+        muted: '#6b7280',
+        primary: '#6b7280',
+        secondary: '#4b5563',
+        favorite: '#9ca3af',
+      },
       fontFamily: {
         'primary' : ["Montserrat", "sans-serif"],
         'secondary' : ["Nunito Sans", "sans-serif"]

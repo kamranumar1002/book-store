@@ -1,6 +1,6 @@
 const express = require('express');
 const Book = require('./book.model');
-const { postABook, getAllBooks, getSingleBook, UpdateBook, deleteABook } = require('./book.controller');
+const { postABook, getAllBooks, getSingleBook, getSingleBookBySlug, UpdateBook, deleteABook, seedDummyBooks, backfillBookSlugs } = require('./book.controller');
 const verifyAdminToken = require('../middleware/verifyAdminToken');
 const router =  express.Router();
 
@@ -13,8 +13,17 @@ const router =  express.Router();
 // post a book
 router.post("/create-book", verifyAdminToken, postABook)
 
+// seed dummy books (admin only)
+router.post("/seed-dummy-books", verifyAdminToken, seedDummyBooks);
+
+// backfill slugs for old books (admin only)
+router.post("/backfill-slugs", verifyAdminToken, backfillBookSlugs);
+
 // get all books
 router.get("/", getAllBooks);
+
+// single book endpoint by slug
+router.get("/slug/:slug", getSingleBookBySlug);
 
 // single book endpoint
 router.get("/:id", getSingleBook);

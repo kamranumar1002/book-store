@@ -3,13 +3,18 @@ const app = express();
 const cors = require("cors");
 
 const mongoose = require("mongoose");
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 8000;
 require('dotenv').config()
 
+// Strict DB URL as required (do not rely on env variations)
+const DB_URL = "mongodb+srv://sp23bcs140_db_user:MarvaAsif786@cluster0.clkxyos.mongodb.net/?appName=Cluster0";
+
 // middleware
-app.use(express.json());
+// Allow larger payloads (e.g., base64 cover images from dashboard uploads).
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://book-app-frontend-tau.vercel.app'],
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'https://book-app-frontend-tau.vercel.app'],
     credentials: true
 }))
 
@@ -25,7 +30,7 @@ app.use("/api/auth", userRoutes)
 app.use("/api/admin", adminRoutes)
 
 async function main() {
-  await mongoose.connect(process.env.DB_URL);
+  await mongoose.connect(DB_URL);
   app.use("/", (req, res) => {
     res.send("Book Store Server is running!");
   });

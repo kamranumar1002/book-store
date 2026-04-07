@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import BookCard from '../books/BookCard';
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 // Import Swiper React components
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -13,19 +14,46 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import { useFetchAllBooksQuery } from '../../redux/features/books/booksApi';
 
-const categories = ["Choose a genre", "Business", "Fiction", "Horror", "Adventure"]
+const categories = ["Choose a genre", "Business", "Technology", "Fiction", "Horror", "Adventure"]
 
-const TopSellers = () => {
+const TopSellers = ({ books: booksProp }) => {
     
     const [selectedCategory, setSelectedCategory] = useState("Choose a genre");
+    const [swiperRef, setSwiperRef] = useState(null);
 
-   const {data: books = []} = useFetchAllBooksQuery();
+   const { data: booksFromApi = [] } = useFetchAllBooksQuery(undefined, { skip: !!booksProp });
+   const books = booksProp ?? booksFromApi;
   
-    const filteredBooks = selectedCategory === "Choose a genre" ? books : books.filter(book => book.category === selectedCategory.toLowerCase())
+    const filteredBooks =
+        selectedCategory === "Choose a genre"
+            ? books
+            : books.filter(
+                (book) => (book?.category ?? '').toLowerCase() === selectedCategory.toLowerCase()
+              );
 
     return (
         <div className='py-10'>
-            <h2 className='text-3xl font-semibold mb-6'>Top Sellers</h2>
+            <div className='mb-6 flex items-center justify-between'>
+                <h2 className='text-3xl font-semibold'>Top Sellers</h2>
+                <div className='flex items-center gap-2'>
+                    <button
+                        type="button"
+                        onClick={() => swiperRef?.slidePrev()}
+                        className="rounded-full border border-gray-300 p-2 hover:bg-gray-100"
+                        aria-label="Scroll top sellers left"
+                    >
+                        <FiChevronLeft size={20} />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => swiperRef?.slideNext()}
+                        className="rounded-full border border-gray-300 p-2 hover:bg-gray-100"
+                        aria-label="Scroll top sellers right"
+                    >
+                        <FiChevronRight size={20} />
+                    </button>
+                </div>
+            </div>
             {/* category filtering */}
             <div className='mb-8 flex items-center'>
                 <select
@@ -40,9 +68,10 @@ const TopSellers = () => {
             </div>
 
             <Swiper
+                onSwiper={setSwiperRef}
                 slidesPerView={1}
                 spaceBetween={30}
-                navigation={true}
+                navigation={false}
                 breakpoints={{
                     640: {
                         slidesPerView: 1,

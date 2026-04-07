@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: #f3f4f6;
+    color: #1f2937;
+    font-family: "Montserrat", sans-serif;
+  }
+}
+
+@layer components {
+  .card-surface {
+    background: #ffffff;
+    border: 1px solid #d5d9df;
+    border-radius: 0.75rem;
+  }
+}

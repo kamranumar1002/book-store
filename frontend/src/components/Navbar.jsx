@@ -1,10 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { HiMiniBars3CenterLeft, HiOutlineHeart, HiOutlineShoppingCart } from "react-icons/hi2";
 import { IoSearchOutline } from "react-icons/io5";
 import { HiOutlineUser } from "react-icons/hi";
 
 import avatarImg from "../assets/avatar.png"
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useAuth } from "../context/AuthContext";
 
@@ -18,7 +18,10 @@ const navigation = [
 const Navbar = () => {
 
     const  [isDropdownOpen, setIsDropdownOpen] = useState(false)
+    const [searchTerm, setSearchTerm] = useState('');
     const cartItems = useSelector(state => state.cart.cartItems);
+    const navigate = useNavigate();
+    const location = useLocation();
    
     const {currentUser, logout} = useAuth()
     
@@ -27,6 +30,21 @@ const Navbar = () => {
     }
 
     const token = localStorage.getItem('token');
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        setSearchTerm(params.get('search') || '');
+    }, [location.search]);
+
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+        const value = searchTerm.trim();
+        if (!value) {
+            navigate('/');
+            return;
+        }
+        navigate(`/?search=${encodeURIComponent(value)}`);
+    };
   
     return (
         <header className="max-w-screen-2xl mx-auto px-4 py-6">
@@ -38,14 +56,18 @@ const Navbar = () => {
                     </Link>
 
                     {/* search input */}
-                    <div className="relative sm:w-72 w-40 space-x-2">
+                    <form onSubmit={handleSearchSubmit} className="relative sm:w-72 w-40 space-x-2">
 
-                        <IoSearchOutline className="absolute inline-block left-3 inset-y-2" />
+                        <IoSearchOutline className="absolute inline-block left-3 inset-y-2 text-muted" />
 
-                        <input type="text" placeholder="Search here"
-                            className="bg-[#EAEAEA] w-full py-1 md:px-8 px-6 rounded-md focus:outline-none"
+                        <input
+                            type="text"
+                            placeholder="Search books..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="bg-surface border border-border text-text placeholder:text-muted w-full py-1 md:px-8 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                         />
-                    </div>
+                    </form>
                 </div>
 
 
@@ -80,17 +102,21 @@ const Navbar = () => {
                                     </div>
                                 )
                             }
-                            </> : token ?  <Link to="/dashboard" className='border-b-2 border-primary'>Dashboard</Link> : (
+                            </> : token ? (
+                                <Link to="/dashboard" className="inline-flex items-center">
+                                    <HiOutlineUser className="size-6" />
+                                </Link>
+                            ) : (
                                 <Link to="/login"> <HiOutlineUser className="size-6" /></Link>
                             )
                         }
                     </div>
                     
-                    <button className="hidden sm:block">
+                    <Link to="/favorites" className="hidden sm:block" aria-label="Favorites">
                         <HiOutlineHeart className="size-6" />
-                    </button>
+                    </Link>
 
-                    <Link to="/cart" className="bg-primary p-1 sm:px-6 px-2 flex items-center rounded-sm">
+                    <Link to="/cart" className="bg-primary text-bg p-1 sm:px-6 px-2 flex items-center rounded-sm hover:bg-secondary transition-colors">
                         <HiOutlineShoppingCart className='' />
                         {
                             cartItems.length > 0 ?  <span className="text-sm font-semibold sm:ml-1">{cartItems.length}</span> :  <span className="text-sm font-semibold sm:ml-1">0</span>

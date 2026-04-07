@@ -1,14 +1,13 @@
 import React from 'react'
-import { useAuth } from '../context/AuthContext'
 import { Navigate } from 'react-router-dom'
+import { decodeJwt, isJwtExpired } from '../utils/jwt'
 
 const PrivateRoute = ({children}) => {
-    const {currentUser, loading} = useAuth();
+    const token = localStorage.getItem('token');
+    const payload = decodeJwt(token);
+    const isAuthed = !!token && !!payload && !isJwtExpired(payload);
 
-    if(loading) {
-        return <div>Loading..</div>
-    }
-    if(currentUser) {
+    if(isAuthed) {
         return children;
     }
   

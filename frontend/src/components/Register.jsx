@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { FaGoogle } from "react-icons/fa";
+import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from "react-hook-form"
-import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+import getBaseUrl from '../utils/baseURL';
 
 const Register = () => {
     const [message, setMessage] = useState("");
-    const {registerUser, signInWithGoogle} = useAuth();
+    const navigate = useNavigate();
     // console.log(registerUser)
     const {
         register,
@@ -18,26 +18,26 @@ const Register = () => {
     //   register user
 
       const onSubmit = async(data) => {
-        // console.log(data)
         try {
-            await registerUser(data.email, data.password);
-            alert("User registered successfully!")
+            const username = (data.email || '').trim().toLowerCase();
+            const password = (data.password || '').trim();
+            // Backend expects { username, password }
+            await axios.post(`${getBaseUrl()}/api/auth/register`, {
+                username,
+                password,
+                role: 'user'
+            }, {
+                headers: { 'Content-Type': 'application/json' }
+            });
+            alert("User registered successfully!");
+            navigate("/login");
         } catch (error) {
-           setMessage("Please provide a valid email and password") 
+           const apiMessage = error?.response?.data?.message;
+           setMessage(apiMessage || "Registration failed. Please try a different username and password.") 
            console.error(error)
         }
       }
 
-      const handleGoogleSignIn = async() => {
-        try {
-            await signInWithGoogle();
-            alert("Login successful!");
-            navigate("/")
-        } catch (error) {
-            alert("Google sign in failed!") 
-            console.error(error)
-        }
-      }
   return (
     <div className='h-[calc(100vh-120px)] flex justify-center items-center '>
     <div className='w-full max-w-sm mx-auto bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4'>
@@ -68,16 +68,6 @@ const Register = () => {
             </div>
         </form>
         <p className='align-baseline font-medium mt-4 text-sm'>Have an account? Please <Link to="/login" className='text-blue-500 hover:text-blue-700'>Login</Link></p>
-
-        {/* google sign in */}
-        <div className='mt-4'>
-            <button 
-            onClick={handleGoogleSignIn}
-            className='w-full flex flex-wrap gap-1 items-center justify-center bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none'>
-            <FaGoogle  className='mr-2'/>
-            Sign in with Google
-            </button>
-        </div>
 
         <p className='mt-5 text-center text-gray-500 text-xs'>©2025 Book Store. All rights reserved.</p>
     </div>
